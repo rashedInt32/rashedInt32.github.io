@@ -1,0 +1,8 @@
+node_modules
+dist
+.DS_Store
+art/assets/
+art/renders/
+art/*.blend1
+art/bake/
+art/*.blend
