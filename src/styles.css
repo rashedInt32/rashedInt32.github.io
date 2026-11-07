@@ -1,0 +1,1826 @@
+/* Night Harbor overlay. Colors from tidepool, accents from glass's PRISM. */
+
+@property --accent {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #4eb4d3;
+}
+
+:root {
+  --bg: #01080d;
+  --ink: #e2edf4;
+  --text: #9bb5c7;
+  --subtle: #7f9db2;
+  --muted: #6a8fa8;
+  --line: #1d3b52;
+  --ghost: #22405a;
+  --accent: #4eb4d3;
+  --pad: round(clamp(18px, 3.2vw, 44px), 4px);
+  --status-h: 24px;
+  --panel-w: round(down, min(30vw, 440px), 4px);
+  --ease-out: cubic-bezier(0.2, 0.7, 0.1, 1);
+  --mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  color-scheme: dark;
+  transition: --accent 700ms ease;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#scene {
+  position: fixed;
+  inset: 0;
+}
+
+#ui {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+p,
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-weight: inherit;
+  font-size: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 4px;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── intro ─────────────────────────────────────────────── */
+
+.intro {
+  /* The prompt keeps its own cyan, whatever the HUD's accent is. */
+  --accent: #4eb4d3;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background-color: var(--bg);
+  pointer-events: auto;
+  transition: background-color 1300ms ease;
+}
+
+.intro--clear {
+  background-color: transparent;
+  pointer-events: none;
+}
+
+.intro-inner {
+  display: grid;
+  gap: 1.4em;
+  padding: 0 var(--pad);
+  font-size: clamp(13px, 1.1vw, 16px);
+}
+
+.intro-login {
+  color: var(--muted);
+  font-size: 0.78em;
+  letter-spacing: 0.01em;
+}
+
+.intro-row {
+  white-space: pre;
+  color: var(--ink);
+  cursor: text;
+  transition: transform 760ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+.pr-user {
+  color: var(--accent);
+}
+
+.pr-cwd {
+  color: var(--subtle);
+}
+
+.pr-sig {
+  color: var(--muted);
+}
+
+.pr-ghost {
+  color: var(--ghost);
+}
+
+.pr-caret {
+  display: inline-block;
+  min-width: 0.6em;
+  background: var(--accent);
+  color: var(--bg);
+  animation: blink 1.1s steps(1) infinite;
+}
+
+.intro-row.typing .pr-caret {
+  animation: none;
+}
+
+@keyframes blink {
+  50% {
+    background: transparent;
+    color: var(--ghost);
+  }
+}
+
+.intro-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1em 2em;
+  min-height: 2.4em;
+  font-size: 0.78em;
+  color: var(--muted);
+  transition: opacity 300ms ease;
+}
+
+.intro-status {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7em;
+}
+
+.intro-spin {
+  display: inline-block;
+  width: 1em;
+  color: var(--accent);
+}
+
+.intro--ready .intro-spin {
+  font-size: 0.7em;
+  transform: translateY(-0.1em);
+}
+
+.intro--ready .intro-status {
+  color: var(--subtle);
+}
+
+.intro-enter {
+  padding: 0.55em 1em;
+  border: 1px solid var(--line);
+  color: var(--subtle);
+  letter-spacing: 0.04em;
+  transition:
+    border-color 250ms ease,
+    color 250ms ease;
+}
+
+.intro-enter:hover,
+.intro--ready .intro-enter {
+  border-color: color-mix(in oklab, var(--accent) 55%, var(--line));
+  color: var(--ink);
+}
+
+.intro--leaving .intro-foot,
+.intro--leaving .intro-login {
+  opacity: 0;
+}
+
+.intro--leaving .intro-row {
+  cursor: default;
+}
+
+.intro .ch {
+  display: inline-block;
+  transition:
+    opacity 560ms ease,
+    filter 560ms ease,
+    transform 560ms ease;
+}
+
+.intro--leaving .ch {
+  opacity: 0;
+  filter: blur(4px);
+  transform: translateY(-5px);
+}
+
+.intro--leaving .pr-caret {
+  animation: none;
+  background: transparent;
+  transition: background-color 200ms ease;
+}
+
+.horizon {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--accent) 45%, transparent) 18%,
+    color-mix(in oklab, var(--accent) 65%, white) 50%,
+    color-mix(in oklab, var(--accent) 45%, transparent) 82%,
+    transparent
+  );
+  box-shadow: 0 0 16px color-mix(in oklab, var(--accent) 55%, transparent);
+  transform: scaleX(0);
+  transition:
+    transform 1000ms var(--ease-out),
+    opacity 900ms ease;
+}
+
+.horizon.on {
+  transform: scaleX(1);
+}
+
+.horizon.off {
+  opacity: 0;
+}
+
+/* ── hud ───────────────────────────────────────────────── */
+
+.hud {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+}
+
+.hud--on {
+  visibility: visible;
+}
+
+.hud a,
+.hud button {
+  pointer-events: auto;
+}
+
+.rise {
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 800ms ease var(--d, 0ms),
+    transform 1000ms var(--ease-out) var(--d, 0ms);
+}
+
+.hud--on .rise {
+  opacity: 1;
+  transform: none;
+}
+
+.hud-top {
+  position: absolute;
+  top: var(--pad);
+  left: var(--pad);
+  right: var(--pad);
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+  column-gap: 24px;
+}
+
+/* ── nav ───────────────────────────────────────────────── */
+
+.nav {
+  display: flex;
+  align-items: baseline;
+  font-size: 12px;
+  line-height: 20px;
+  letter-spacing: 0.02em;
+}
+
+.nav-a {
+  color: var(--muted);
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
+  transition:
+    color 200ms ease,
+    border-color 300ms ease;
+}
+
+.nav-a:hover {
+  color: var(--text);
+}
+
+.nav-a[aria-current='page'] {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+
+.nav-sep {
+  color: var(--ghost);
+  white-space: pre;
+}
+
+/* Views fade in and out; a hidden part is also inert (set in hud.ts). */
+.view-part {
+  transition:
+    opacity 500ms ease,
+    visibility 0s linear 0s;
+}
+
+.view-part.off {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 360ms ease,
+    visibility 0s linear 360ms;
+}
+
+.ident-name {
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.ident-role {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.gh {
+  justify-self: end;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--subtle);
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
+  transition:
+    color 200ms ease,
+    border-color 200ms ease;
+}
+
+.gh:hover {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.gh-arrow {
+  color: var(--accent);
+}
+
+/* index */
+
+.index {
+  --ix-rows: 11;
+  position: absolute;
+  left: var(--pad);
+  /* Centred over the area above the statusline, rounded so every 1px bar in
+     the list lands on a whole pixel. Rows are 28px, no gap. */
+  top: round(down, calc((100% - var(--status-h) - var(--ix-rows) * 28px) / 2), 1px);
+  pointer-events: none;
+  isolation: isolate;
+}
+
+/* A soft dark falloff behind the list, so it reads over bright parts of the
+   scene. No edges: it fades to nothing well before its box. */
+.index::before {
+  content: '';
+  position: absolute;
+  /* Anchored to the screen edge: the scene's lamps and strips pass behind
+     the list, and this keeps every label legible over them. */
+  left: calc(var(--pad) * -1);
+  width: 360px;
+  top: 50%;
+  height: 560px;
+  margin-top: -280px;
+  z-index: -1;
+  background: radial-gradient(ellipse 100% 55% at 0% 50%, rgba(1, 8, 13, 0.84), rgba(1, 8, 13, 0.5) 50%, rgba(1, 8, 13, 0));
+  pointer-events: none;
+}
+
+.index ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+
+.ix {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 28px;
+  padding: 0 8px 0 0;
+  font-size: 12px;
+  line-height: 18px;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  transition: color 300ms ease;
+}
+
+.ix-bar {
+  /* Pinned to y = 14 of the 28px row: the middle of the text, on a whole pixel. */
+  align-self: flex-start;
+  margin-top: 14px;
+  width: 8px;
+  height: 1px;
+  background: var(--line);
+  transition:
+    width 500ms var(--ease-out),
+    background-color 500ms ease;
+}
+
+.ix-n {
+  font-variant-numeric: tabular-nums;
+  transition: color 300ms ease;
+}
+
+.ix:focus-visible {
+  outline-offset: 2px;
+}
+
+.ix:hover {
+  color: var(--text);
+}
+
+.ix:hover .ix-bar {
+  width: 14px;
+  background: var(--muted);
+}
+
+.ix[aria-current='true'] {
+  color: var(--ink);
+}
+
+.ix[aria-current='true'] .ix-n {
+  color: var(--accent);
+}
+
+.ix[aria-current='true'] .ix-bar {
+  width: 28px;
+  background: var(--accent);
+}
+
+/* panel */
+
+.panel {
+  position: absolute;
+  right: var(--pad);
+  /* Above the pool's far rim, over the dark pillars, in every view. */
+  top: round(down, 36vh, 1px);
+  width: var(--panel-w);
+  isolation: isolate;
+}
+
+/* Home has no index and three paragraphs: start higher so it all fits
+   above the statusline, beside the name in the grains. */
+.hud[data-view='home'] .panel {
+  top: round(down, 22vh, 1px);
+}
+
+/* Same soft falloff as the index, under the copy. */
+.panel::before {
+  content: '';
+  position: absolute;
+  inset: -120px -72px -88px -160px;
+  z-index: -1;
+  background: radial-gradient(closest-side, rgba(1, 8, 13, 0.66), rgba(1, 8, 13, 0.3) 55%, rgba(1, 8, 13, 0));
+  pointer-events: none;
+}
+
+.p-tag {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.p-year,
+.p-stars {
+  font-variant-numeric: tabular-nums;
+}
+
+.p-stars {
+  color: color-mix(in oklab, var(--accent) 70%, var(--ink));
+}
+
+.p-prompt {
+  color: var(--muted);
+  white-space: pre;
+}
+
+.p-dot {
+  color: var(--muted);
+  white-space: pre;
+}
+
+.p-name {
+  --chars: 10;
+  margin-top: 8px;
+  /* As big as the design wants, but never wider than the panel: a mono
+     advance is 0.6em, less the -0.04em tracking, plus a little slack. */
+  font-size: round(down, min(clamp(40px, 4.6vw, 76px), calc(var(--panel-w) / (var(--chars) * 0.58))), 1px);
+  font-weight: 200;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+  white-space: nowrap;
+  text-shadow: 0 0 48px rgba(1, 8, 13, 0.6);
+}
+
+.p-name-vis {
+  display: inline-block;
+  vertical-align: top;
+}
+
+.p-copy {
+  margin-top: 20px;
+  display: grid;
+  gap: 12px;
+}
+
+.p-line {
+  max-width: 42ch;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--text);
+  text-wrap: pretty;
+  text-shadow: 0 0 18px rgba(1, 8, 13, 0.9);
+}
+
+.p-form {
+  margin-top: 12px;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--muted);
+}
+
+.p-form-k {
+  color: var(--subtle);
+}
+
+.p-actions {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 24px;
+  margin-top: 24px;
+  min-height: 20px;
+}
+
+.p-hint {
+  font-size: 11px;
+  line-height: 20px;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+.p-hint-k {
+  color: var(--accent);
+}
+
+.p-hint kbd {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 4px;
+  font: inherit;
+  line-height: 16px;
+  text-align: center;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+
+.p-hint-touch {
+  display: none;
+}
+
+.panel-body.is-home .p-form,
+.panel-body.is-home .p-link,
+.panel-body.is-home .pager,
+.panel-body:not(.is-home) .p-hint,
+.panel-body:not(.is-home) .p-meta,
+.panel-body:not(.is-home) .p-cta,
+.panel-body:not(.is-home) .p-contact {
+  display: none;
+}
+
+.p-meta {
+  margin-top: 12px;
+  display: grid;
+  gap: 0;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--muted);
+}
+
+.panel-body.is-home .p-line {
+  max-width: 50ch;
+}
+
+/* The role already sits top left on wide screens; only phones hide it there. */
+@media (min-width: 701px) {
+  .p-meta-role {
+    display: none;
+  }
+}
+
+.p-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin-top: 24px;
+}
+
+.cta {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--ink);
+  padding-bottom: 2px;
+  border-bottom: 1px solid color-mix(in oklab, var(--accent) 45%, transparent);
+  transition: border-color 200ms ease;
+}
+
+.cta:hover {
+  border-color: var(--accent);
+}
+
+.cta-arr {
+  color: var(--accent);
+}
+
+.p-contact {
+  margin-top: 16px;
+}
+
+/* GitHub, LinkedIn, email, CV: one quiet row. */
+.contact {
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--muted);
+}
+
+.c-link {
+  color: var(--subtle);
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
+  transition:
+    color 200ms ease,
+    border-color 200ms ease;
+}
+
+.c-link:hover {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.c-arr {
+  color: var(--accent);
+}
+
+.c-sep {
+  color: var(--ghost);
+  white-space: pre;
+}
+
+.p-link {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--accent);
+  padding-bottom: 2px;
+  border-bottom: 1px solid color-mix(in oklab, var(--accent) 35%, transparent);
+  transition: border-color 200ms ease;
+}
+
+.p-link:hover {
+  border-color: var(--accent);
+}
+
+.pager {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.pager button {
+  width: 34px;
+  height: 30px;
+  border: 1px solid var(--line);
+  color: var(--subtle);
+}
+
+.pager button:active {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+@keyframes swap-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.panel-body.swap .p-tag,
+.panel-body.swap .p-copy,
+.panel-body.swap .p-form,
+.panel-body.swap .p-actions {
+  animation: swap-in 620ms var(--ease-out) both;
+}
+
+.panel-body.swap .p-copy {
+  animation-delay: 70ms;
+}
+
+.panel-body.swap .p-form {
+  animation-delay: 130ms;
+}
+
+.panel-body.swap .p-actions {
+  animation-delay: 180ms;
+}
+
+/* help */
+
+.help {
+  position: absolute;
+  right: var(--pad);
+  top: calc(var(--pad) + 36px);
+  min-width: 248px;
+  padding: 14px 16px 16px;
+  border: 1px solid var(--line);
+  background: rgba(1, 8, 13, 0.9);
+  font-size: 11.5px;
+  color: var(--subtle);
+  pointer-events: auto;
+}
+
+.help[hidden] {
+  display: none;
+}
+
+.help-title {
+  margin-bottom: 10px;
+  color: var(--muted);
+}
+
+.help dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 22px;
+  margin: 0;
+}
+
+.help dt {
+  color: var(--ink);
+  white-space: pre;
+}
+
+.help dd {
+  margin: 0;
+}
+
+/* statusline */
+
+.status {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: stretch;
+  height: calc(var(--status-h) + 1px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  font-size: 11px;
+  line-height: var(--status-h);
+  white-space: nowrap;
+  color: var(--subtle);
+  background: rgba(1, 8, 13, 0.8);
+  border-top: 1px solid rgba(29, 59, 82, 0.55);
+}
+
+.status.rise {
+  transform: translateY(100%);
+}
+
+.hud--on .status.rise {
+  transform: none;
+}
+
+.st-mode {
+  padding: 0 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--bg);
+  background: var(--accent);
+}
+
+.st-seg {
+  padding: 0 12px;
+  border-right: 1px solid var(--line);
+}
+
+.st-path {
+  color: var(--text);
+}
+
+.st-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.st-keys {
+  color: var(--muted);
+}
+
+.st-fill {
+  flex: 1;
+}
+
+.st-gpu {
+  border-right: 0;
+  border-left: 1px solid var(--line);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── work ──────────────────────────────────────────────── */
+
+/* The hall stays visible at the edges; the reading column gets a darker,
+   flat field. No blur: a gradient costs nothing to composite. */
+.work-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(1, 8, 13, 0.38),
+    rgba(1, 8, 13, 0.86) 16%,
+    rgba(1, 8, 13, 0.92) 50%,
+    rgba(1, 8, 13, 0.86) 84%,
+    rgba(1, 8, 13, 0.38)
+  );
+  pointer-events: none;
+}
+
+.work {
+  position: absolute;
+  /* Starts under the top bar, so scrolled text never runs into the nav;
+     the edges fade instead of cutting. */
+  inset: calc(var(--pad) + 44px) 0 calc(var(--status-h) + 1px) 0;
+  mask-image: linear-gradient(to bottom, transparent, #000 40px, #000 calc(100% - 32px), transparent);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: auto;
+  outline: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+.work-col {
+  /* The rail holds years and section labels; the timeline rule runs down
+     the middle of the gutter. Both round to whole pixels. */
+  --when: round(down, clamp(112px, 15vw, 176px), 4px);
+  --gutter: 48px;
+  --rule: round(down, calc(var(--when) + var(--gutter) / 2), 1px);
+  width: min(1000px, calc(100% - var(--pad) * 2));
+  margin: 0 auto;
+  padding: 56px 0 128px;
+}
+
+/* ── head ── */
+
+.w-head {
+  padding-left: calc(var(--when) + var(--gutter));
+}
+
+.w-kicker {
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+.w-title {
+  margin-top: 16px;
+  font-size: round(down, clamp(44px, 6vw, 84px), 1px);
+  font-weight: 200;
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  color: var(--ink);
+}
+
+.w-big {
+  display: block;
+}
+
+.w-big-2 {
+  color: var(--subtle);
+}
+
+.w-sub {
+  margin-top: 24px;
+  max-width: 56ch;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--subtle);
+}
+
+/* Four facts, ruled like a table: one line above, one below, hairlines
+   between. Value large, label small under it. */
+.w-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 40px 0 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.w-stat {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  padding: 16px 16px 16px 0;
+  min-width: 0;
+}
+
+.w-stat + .w-stat {
+  padding-left: 16px;
+  border-left: 1px solid var(--line);
+}
+
+.w-stat dd {
+  margin: 0;
+  font-size: 28px;
+  line-height: 32px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.w-stat dt {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--muted);
+}
+
+.w-stat--now dd {
+  color: var(--accent);
+}
+
+/* ── timeline ── */
+
+.jobs {
+  --fill: 1;
+  position: relative;
+  list-style: none;
+  margin: 88px 0 0;
+  padding: 0;
+}
+
+/* The rule, and the accent that fills it as you read down. */
+.jobs::before,
+.jobs::after {
+  content: '';
+  position: absolute;
+  top: 18px;
+  bottom: 0;
+  left: var(--rule);
+  width: 1px;
+  pointer-events: none;
+}
+
+.jobs::before {
+  background: var(--line);
+}
+
+.jobs::after {
+  background: linear-gradient(to bottom, var(--accent), color-mix(in oklab, var(--accent) 55%, transparent));
+  transform-origin: top;
+  transform: scaleY(var(--fill));
+  box-shadow: 0 0 8px color-mix(in oklab, var(--accent) 50%, transparent);
+}
+
+.job {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--when) 1fr;
+  column-gap: var(--gutter);
+  padding-bottom: 88px;
+}
+
+.job:last-child {
+  padding-bottom: 0;
+}
+
+.job-node {
+  position: absolute;
+  top: 14px;
+  left: calc(var(--rule) - 4px);
+  width: 9px;
+  height: 9px;
+  background: var(--bg);
+  border: 1px solid var(--muted);
+  transition:
+    background 400ms ease,
+    border-color 400ms ease,
+    box-shadow 400ms ease;
+}
+
+.job.is-lit .job-node {
+  background: color-mix(in oklab, var(--accent) 40%, var(--bg));
+  border-color: var(--accent);
+}
+
+.job--now .job-node {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 12px color-mix(in oklab, var(--accent) 60%, transparent);
+}
+
+/* The current role's node rings once when it first comes into view. */
+.job-node::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border: 1px solid var(--accent);
+  opacity: 0;
+}
+
+.job--now.is-in .job-node::after {
+  animation: ring 1400ms var(--ease-out) 300ms 1;
+}
+
+@keyframes ring {
+  from {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(3.2);
+  }
+}
+
+.job-rail {
+  text-align: right;
+}
+
+.job-year {
+  font-size: 32px;
+  line-height: 36px;
+  font-weight: 200;
+  letter-spacing: -0.02em;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  transition: color 500ms ease;
+}
+
+.job.is-lit .job-year {
+  color: var(--ink);
+}
+
+.job--now .job-year {
+  color: var(--accent);
+}
+
+.job-range {
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.job-span {
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--muted);
+}
+
+.job-body {
+  min-width: 0;
+}
+
+.job-company {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+  font-size: round(down, clamp(26px, 2.8vw, 36px), 1px);
+  line-height: 36px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.job-now {
+  font-size: 10px;
+  line-height: 16px;
+  letter-spacing: 0.08em;
+  font-weight: 400;
+  padding: 0 7px;
+  color: var(--accent);
+  border: 1px solid color-mix(in oklab, var(--accent) 55%, transparent);
+}
+
+.job-role {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+
+.job-title {
+  color: var(--text);
+}
+
+.job-note {
+  margin-top: 16px;
+  max-width: 64ch;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--subtle);
+}
+
+.job-note-mark {
+  color: var(--accent);
+}
+
+/* The numbers worth reading first. */
+.job-highs {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 24px 0 0;
+}
+
+.job-high {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  padding: 0 24px;
+  border-left: 1px solid var(--line);
+}
+
+.job-high:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.job-high dd {
+  margin: 0;
+  font-size: 28px;
+  line-height: 32px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.job-high dt {
+  margin-top: 4px;
+  max-width: 28ch;
+  text-wrap: balance;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--muted);
+}
+
+.job-part {
+  margin-top: 28px;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: color-mix(in oklab, var(--accent) 70%, var(--ink));
+}
+
+.job-part::before {
+  content: '▸ ';
+  color: var(--accent);
+}
+
+.job-points {
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  max-width: 64ch;
+}
+
+.job-part + .job-points {
+  margin-top: 12px;
+}
+
+.job-points li {
+  position: relative;
+  padding-left: 16px;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--text);
+  text-wrap: pretty;
+}
+
+.job-points li::before {
+  content: '–';
+  position: absolute;
+  left: 0;
+  color: var(--ghost);
+}
+
+.tags {
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tags li {
+  padding: 1px 7px;
+  font-size: 11px;
+  /* 11px mono advances 6.6px; +0.4px makes it 7, so every tag is a whole
+     number of pixels wide and the borders after it stay sharp. */
+  letter-spacing: 0.4px;
+  line-height: 16px;
+  color: var(--subtle);
+  border: 1px solid var(--line);
+}
+
+/* Entry: each block eases up once as it first comes into view. Without
+   the motion class (the fallback page) everything is simply there. */
+.work--motion .w-head,
+.work--motion .job,
+.work--motion .w-sec {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 700ms ease,
+    transform 900ms var(--ease-out);
+}
+
+.work--motion .is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* ── after the roles ── */
+
+.w-sec {
+  display: grid;
+  grid-template-columns: var(--when) 1fr;
+  column-gap: var(--gutter);
+  margin-top: 88px;
+}
+
+.w-label {
+  justify-self: end;
+  padding-top: 20px;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.w-sec-body {
+  min-width: 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.w-edu {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 300;
+  color: var(--ink);
+}
+
+.w-meta {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--subtle);
+}
+
+.w-rows {
+  margin: -12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.w-row {
+  display: grid;
+  /* A fixed name column so the three rows line up; wide enough for the
+     longest name at 16px. */
+  grid-template-columns: 136px 1fr auto;
+  align-items: baseline;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 200ms ease;
+}
+
+.w-row-name {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 300;
+  color: var(--ink);
+  transition: color 200ms ease;
+}
+
+.w-row-line {
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--subtle);
+}
+
+.w-row-host {
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--muted);
+  transition: color 200ms ease;
+}
+
+.w-row:hover,
+.w-row:focus-visible {
+  border-color: var(--accent);
+}
+
+.w-row:hover .w-row-name,
+.w-row:focus-visible .w-row-name {
+  color: color-mix(in oklab, var(--accent) 60%, var(--ink));
+}
+
+.w-row:hover .w-row-host,
+.w-row:focus-visible .w-row-host {
+  color: var(--ink);
+}
+
+/* Skills as a ruled grid: one hairline per edge, never doubled. */
+.w-skillgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(208px, 1fr));
+  margin: 0;
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+
+.w-sec--skills .w-sec-body {
+  border-top: 0;
+}
+
+.w-sec--skills .w-label {
+  padding-top: 16px;
+}
+
+.w-skill {
+  padding: 12px 16px 16px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.w-skill dt {
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0.04em;
+  color: color-mix(in oklab, var(--accent) 70%, var(--ink));
+}
+
+.w-skill dd {
+  margin: 0;
+}
+
+.w-chips {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.w-chips li {
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--text);
+}
+
+/* The last block is an invitation: the address large, links under it. */
+.w-mail {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: round(down, clamp(22px, 2.8vw, 36px), 1px);
+  line-height: 1.2;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in oklab, var(--accent) 45%, transparent);
+  transition:
+    color 200ms ease,
+    border-color 200ms ease;
+}
+
+.w-mail:hover,
+.w-mail:focus-visible {
+  color: color-mix(in oklab, var(--accent) 55%, var(--ink));
+  border-color: var(--accent);
+}
+
+.w-sec--contact .contact {
+  margin-top: 24px;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.w-place {
+  margin-top: 8px;
+  color: var(--muted);
+}
+
+/* ── fallback ──────────────────────────────────────────── */
+
+.fallback {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  pointer-events: auto;
+  padding: calc(var(--pad) * 1.5) var(--pad);
+  background: var(--bg);
+}
+
+.fallback > * {
+  max-width: 680px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.fb-hello {
+  margin-top: 40px;
+  display: grid;
+  gap: 12px;
+}
+
+.fb-hi {
+  color: var(--ink);
+  font-size: 28px;
+  font-weight: 200;
+}
+
+.fb-note {
+  margin-top: 40px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.fb-reason {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.fb-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 40px;
+  display: grid;
+  gap: 28px;
+}
+
+.fb-list li {
+  display: grid;
+  grid-template-columns: 3ch 1fr;
+  gap: 16px;
+}
+
+.fb-n {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.fb-name {
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 300;
+  border-bottom: 1px solid color-mix(in oklab, var(--accent) 40%, transparent);
+}
+
+.fb-kind {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.fb-line {
+  margin-top: 6px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.fb-foot {
+  margin-top: 48px;
+}
+
+.fallback > .contact {
+  margin-top: 24px;
+}
+
+.fb-h {
+  margin-top: 48px;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.fb-work {
+  --when: 112px;
+  --gutter: 24px;
+  --rule: 124px;
+  margin-top: 64px;
+}
+
+.fb-work .w-head {
+  padding-left: 0;
+}
+
+/* ── small screens ─────────────────────────────────────── */
+
+@media (max-width: 700px) {
+  .index,
+  .st-keys,
+  .st-path {
+    display: none;
+  }
+
+  /* Name left, nav right; the role lives in the home panel, github in the contact row. */
+  .hud-top {
+    grid-template-columns: 1fr auto;
+  }
+
+  .ident-role,
+  .gh {
+    display: none;
+  }
+
+  .hud[data-view='home'] .panel {
+    top: auto;
+  }
+
+  .panel-body.is-home .p-line {
+    max-width: none;
+  }
+
+  /* Keep the name in the grains clear on a phone: the iqvia paragraph is
+     in the work view anyway, and the two links say what the hint says. */
+  .panel-body.is-home .p-copy > :nth-child(2),
+  .panel-body.is-home .p-actions {
+    display: none;
+  }
+
+  .p-cta {
+    margin-top: 20px;
+  }
+
+  .work {
+    top: calc(var(--pad) + 32px);
+  }
+
+  /* The column is the whole screen here: an even dim, no bright edges. */
+  .work-scrim {
+    background: rgba(1, 8, 13, 0.86);
+  }
+
+  .work-col {
+    padding-top: 32px;
+  }
+
+  .w-head {
+    padding-left: 0;
+  }
+
+  /* One column. The rule runs down the left edge; each role's year and
+     dates sit on one line above it. */
+  .work-col {
+    --when: 0px;
+    --gutter: 0px;
+    --rule: 4px;
+  }
+
+  .w-title {
+    font-size: round(down, clamp(40px, 12vw, 56px), 1px);
+  }
+
+  .w-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .w-stat:nth-child(3) {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .w-stat:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
+  }
+
+  .w-stat dd {
+    font-size: 24px;
+    line-height: 28px;
+  }
+
+  .jobs {
+    margin-top: 56px;
+  }
+
+  .jobs::before,
+  .jobs::after {
+    top: 14px;
+  }
+
+  .job {
+    grid-template-columns: 1fr;
+    padding-left: 28px;
+    padding-bottom: 56px;
+  }
+
+  .job-node {
+    top: 10px;
+  }
+
+  .job-rail {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 12px;
+    text-align: left;
+  }
+
+  .job-year {
+    font-size: 24px;
+    line-height: 28px;
+  }
+
+  .job-range {
+    margin-top: 0;
+  }
+
+  .job-body {
+    margin-top: 12px;
+  }
+
+  .job-company {
+    font-size: 26px;
+    line-height: 32px;
+  }
+
+  .job-high {
+    padding: 0 16px;
+  }
+
+  .job-high dd {
+    font-size: 24px;
+    line-height: 28px;
+  }
+
+  .w-sec {
+    grid-template-columns: 1fr;
+    margin-top: 72px;
+  }
+
+  .w-label {
+    justify-self: start;
+    padding: 0 0 8px;
+  }
+
+  .w-sec--skills .w-label {
+    padding-top: 0;
+  }
+
+  .w-row {
+    grid-template-columns: 1fr auto;
+    gap: 0 16px;
+  }
+
+  .w-row-line {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .w-skillgrid {
+    grid-template-columns: 1fr;
+  }
+
+  .panel {
+    left: var(--pad);
+    right: var(--pad);
+    top: auto;
+    bottom: calc(var(--status-h) + var(--pad) * 1.2);
+    width: auto;
+  }
+
+  .p-name {
+    font-size: round(down, min(clamp(36px, 13vw, 64px), calc((100vw - var(--pad) * 2) / (var(--chars) * 0.58))), 1px);
+  }
+
+  .p-copy {
+    margin-top: 16px;
+    gap: 8px;
+  }
+
+  .p-line {
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  /* On a phone the copy sits over the floor, where the puddle mirrors the
+     form. A fuller fade keeps the text crisp without a visible box. */
+  .panel::before {
+    inset: -140px calc(var(--pad) * -1) -40px;
+    background: linear-gradient(to bottom, rgba(1, 8, 13, 0), rgba(1, 8, 13, 0.74) 128px, rgba(1, 8, 13, 0.86));
+  }
+
+  .p-actions {
+    justify-content: space-between;
+  }
+
+  .pager {
+    display: flex;
+  }
+
+  .p-hint-keys {
+    display: none;
+  }
+
+  .p-hint-touch {
+    display: inline;
+  }
+
+  .help {
+    left: var(--pad);
+    right: var(--pad);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+}
