@@ -10,7 +10,8 @@ export interface InputHandlers {
   first(): void
   last(): void
   jump(i: number): void
-  open(): void
+  /** Enter: the project's page. o (`direct`): github. */
+  open(direct: boolean): void
   help(): void
   escape(): void
   pointer(p: Point | null): void
@@ -53,12 +54,12 @@ export function bindInput(on: InputHandlers): () => void {
         on.last()
         break
       case 'o':
-        on.open()
+        on.open(true)
         break
       case 'Enter':
         // A focused link or button handles its own Enter.
         if (onControl) return
-        on.open()
+        on.open(false)
         break
       case '?':
         on.help()

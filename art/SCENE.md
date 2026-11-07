@@ -60,6 +60,9 @@ rework and the Blender bake. Change it here first, then in the scene.
 - Add one slow establishing move on home. Detail goes where the eye goes.
 
 ## Budget
+- Measured 2026-11-07 with art/sample_gpu.sh at 1440x900 (blank tab 8%):
+  home or a project 25% GPU, work page 21%, a project's page 9%. bricelab.dev
+  in the same window: 73%. Hold the line at or under 30% for any view.
 - GPU: active at or under 44% at the owner's window (~1546x1525 CSS).
   Changed 2026-11-07 at the owner's request, "everything lower": caps snap
   to whole display refreshes, 60 moving, 40 interacting, 30 reading, 24 idle
@@ -72,6 +75,26 @@ rework and the Blender bake. Change it here first, then in the scene.
    lights only; the form's light and the pointer stay live on top).
 2. Render stills from three of the site's camera views for review.
 3. Integrate into the site only after approval.
+
+## Closer to the reference (2026-11-07)
+Decided after comparing with bricelab.dev side by side. Keep the identity
+(terminal, lowercase mono, the vim statusline); borrow the exhibit read.
+- Forms are authored at full size and scaled by FORM_SCALE (0.7) about the
+  pool's centre on the floor (src/scene/layout.ts): about a third of the
+  frame, hall on every side, water contact kept.
+- The name is 3.2 m wide. The home panel says one line; the paragraphs
+  moved to the work page.
+- A callout line runs from the title to the form's shoulder (ANCHOR in
+  src/scene/index.ts, drawn by src/ui/hud.ts). Mono labels are 11 px
+  uppercase, 0.08 em tracked; titles are Manrope light.
+- The form burns at FORM_GLOW 2.9 against the bake's 2.2, lights a pocket of
+  mist at its foot, and the volume pass pools a second glow at the water.
+- Two more impostors stand in the aisles beside the pool (plants.json, the
+  last two). They reuse pictures baked for other spots, so their light is
+  slightly wrong; rebake with them in place when the hall is next rebuilt.
+- Work page: the hall dissolves into points (src/scene/cloud.ts).
+- A project's page sits over a frozen, blurred frame (#/projects/<id>/case).
+  Its copy comes from Project.case in src/projects.ts, still to be written.
 
 ## Integration (stills approved 2026-11-07)
 - Baked: every static light and its bounce, into light maps for the

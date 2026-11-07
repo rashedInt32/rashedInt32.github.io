@@ -5,6 +5,8 @@ const SPINNER = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
 
 export interface Intro {
   el: HTMLElement
+  /** Loading progress, 0..1, shown beside the spinner until ready. */
+  setProgress(t: number): void
   setReady(): void
   /** Tear down without the exit animation. */
   destroy(): void
@@ -204,6 +206,11 @@ export function createIntro(o: IntroOptions): Intro {
 
   return {
     el,
+    setProgress(t) {
+      if (ready) return
+      const pct = Math.max(0, Math.min(99, Math.round(t * 100)))
+      setStatus(`warming the gpu ${String(pct).padStart(2, ' ')}%`)
+    },
     setReady() {
       if (ready) return
       ready = true

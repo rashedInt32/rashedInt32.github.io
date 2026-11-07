@@ -35,7 +35,7 @@ import {
   vec4,
 } from './tsl'
 import type { FormId } from '../contract'
-import { KEY_DIR as KEY } from './layout'
+import { FORM_SCALE, KEY_DIR as KEY } from './layout'
 
 // TSL node graphs are dynamically typed; the published typings fight swizzles
 // and mixed scalar/vector math, so helpers take and return `any`.
@@ -905,6 +905,8 @@ export function evalForm(form: N, x: FormCtx, P: N, C: N) {
     chain = chain.ElseIf(form.equal(i), () => BUILDERS[i]!(x, P, C))
   }
   chain.Else(() => BUILDERS[BUILDERS.length - 1]!(x, P, C))
+  // Forms are authored at full size; see FORM_SCALE.
+  P.mulAssign(FORM_SCALE)
 }
 
 /** Where on the water each form drops things, for ripple rings. x/z, plus a rate in drops per second. */

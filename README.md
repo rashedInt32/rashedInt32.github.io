@@ -35,6 +35,11 @@ bun run build      # typecheck + production build into dist/
 - Renders at 1x and lets the grain and the dark do the rest. Four quality
   tiers picked from the GPU, plus a governor that steps down when frames run
   late against their cap and remembers that per GPU for a week.
+- A project's page (`#/projects/<id>/case`, Enter on a project) stops the
+  loop and sits over the last frame, blurred once by the compositor. On the
+  work page the hall dissolves into points sampled from its own surfaces at
+  load (`src/scene/cloud.ts`): one sprite, half the grain budget, and the
+  hall's materials cut themselves away on the same uniform.
 - Frame caps snap to whole display refreshes so frames stay evenly spaced:
   60 fps while the camera travels, 40 while you interact (30 on a 60 Hz
   screen), 30 on the work page, 24 after 4 s without input (20 on 60 Hz).
@@ -48,12 +53,26 @@ bun run build      # typecheck + production build into dist/
 | `?tier=0..3` | force a quality tier |
 | `?gpu=webgl` | force the WebGL2 path |
 | `?gov=off` | disable the governor; `?gov=40` lets frames run up to 50% late |
-| `?off=volume,bloom,msaa,mirror,haze,grains,baked,plants` | turn parts off to measure each one's cost; `baked` builds the hall from code instead |
+| `?off=volume,bloom,msaa,mirror,haze,grains,baked,plants,cloud` | turn parts off to measure each one's cost; `baked` builds the hall from code instead; `cloud` keeps the hall solid on the work page |
 | `?perf` | per-frame JS cost and frame count on `window.__harbor` |
 | `?floor=wet\|tone\|ao\|rough` | paint one floor channel instead of the floor |
 | `?vol=depth` | paint the volume pass's ray length |
 | `?noscene` | the overlay alone, against a stub scene |
-| `#/`, `#/projects/<id>`, `#/work` | open on home, a project (e.g. `#/projects/glass`) or the work history |
+| `#/`, `#/projects/<id>`, `#/projects/<id>/case`, `#/work` | open on home, a project (e.g. `#/projects/glass`), its page, or the work history |
+
+## measuring
+
+`art/sample_gpu.sh <label> [seconds]` (macOS) samples whole-device GPU
+utilisation and Chrome's renderer and GPU-process CPU share with the site in
+the front tab. Numbers from 2026-11-07 at 1440x900, the blank-tab baseline
+being 8% GPU:
+
+| what | GPU | renderer CPU | GPU process CPU |
+| --- | --- | --- | --- |
+| home or a project, mouse moving | 25% | 10% | 13% |
+| a project's page (loop stopped) | 9% | 0.4% | 0.9% |
+| work page, hall as points | 21% | 10% | 13% |
+| bricelab.dev, same window, for scale | 73% | 19% | 32% |
 
 ## the hall
 
@@ -76,12 +95,15 @@ stored as log2 per channel in 8-bit WebP; `src/scene/hall.ts` decodes it.
 - `src/projects.ts`, `src/about.ts`: the projects, my profile and work history.
 - `src/scene/forms.ts`: every shape, as GPU math. `particles.ts` moves the grains.
 - `src/scene/hall.ts`: the baked hall, its materials and the tree impostors.
+- `src/scene/cloud.ts`: the hall as points, for the work page, and the dissolve cut.
 - `src/scene/floor.ts`, `volume.ts`, `basin.ts`, `lighting.ts`, `layout.ts`: the
   floor and pool, the light in the air, the halo and haze, the live light.
   `basin.ts` also builds the whole hall from code when the bake is missing.
 - `src/scene/pacer.ts`: frame caps, idle and sleep.
 - `src/scene/index.ts`: renderer, camera, post, morphs, quality.
-- `src/ui/`: the prompt, the HUD, the statusline, input.
+- `src/ui/`: the prompt, the HUD (index, panel, callout line, a project's page), the statusline, input.
+- Type: JetBrains Mono for everything that reads as an instrument; Manrope,
+  light, for titles only (`--display` in `src/styles.css`).
 - `art/`: the Blender scripts and the scene's design notes.
 
 ## credits

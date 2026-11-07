@@ -12,6 +12,7 @@
 import * as THREE from 'three/webgpu'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js'
+import { dissolveCut } from './cloud'
 import {
   Discard,
   Fn,
@@ -44,9 +45,11 @@ import {
   vec2,
   vec3,
   vec4,
+  screenCoordinate,
 } from './tsl'
 import {
   CEILING_Y,
+  FORM_CENTER,
   KEY_DIR,
   LAMPS,
   LAMP_COLOR,
@@ -75,6 +78,8 @@ export interface BasinShared {
   formGlow: N
   /** 1 while the floor's mirror pass renders. Haze layers skip it. */
   inMirror: N
+  /** 0 = the hall stands; 1 = it has gone to points (the work page). */
+  dissolve: N
 }
 
 export interface BasinOptions {
@@ -99,6 +104,7 @@ export function concreteMaterial(s: BasinShared, opts: Pick<BasinOptions, 'wallM
   const m = new THREE.MeshBasicNodeMaterial()
   m.colorNode = Fn(() => {
     const p = positionWorld
+    dissolveCut(s, p, screenCoordinate)
     const nrm = normalize(normalWorld)
     const t = s.time
 
@@ -158,7 +164,7 @@ export function concreteMaterial(s: BasinShared, opts: Pick<BasinOptions, 'wallM
 
     // A faint sheen where concrete faces the form: honed surfaces catch the
     // main light at a glancing angle. One highlight, no loop.
-    const toForm = vec3(0, 2.6, 0).sub(p)
+    const toForm = vec3(FORM_CENTER.x, FORM_CENTER.y, FORM_CENTER.z).sub(p)
     const dForm = length(toForm)
     const view = normalize(cameraPosition.sub(p))
     const half = normalize(toForm.div(dForm).add(view))
@@ -360,10 +366,13 @@ export function createBasin(s: BasinShared, opts: BasinOptions) {
       const density = saturate(a.mul(1.3).sub(0.35)).mul(b.mul(0.6).add(0.4))
       const fadeNear = smoothstep(2.5, 7, distance(p, cameraPosition))
       const fadeEdge = smoothstep(14, 9, abs(p.x)).mul(smoothstep(-19, -14, p.z))
-      // Keep the pool clear: mist over it reads as frosted glass.
+      // Keep the pool clear (mist over it reads as frosted glass), except a
+      // low pocket at the form's foot that glows with the form.
       const offPool = smoothstep(3.5, 5, max(abs(p.x), abs(p.z)))
-      const lit = mix(color(MOON_COLOR), s.accent, 0.3)
-      return vec4(lit.mul(density).mul(fadeNear).mul(fadeEdge).mul(offPool).mul(s.lightsUp).mul(0.07), 1)
+      const foot = smoothstep(2.8, 0.5, length(p.xz)).mul(smoothstep(0.9, 0.2, p.y)).mul(s.formGlow.mul(0.3))
+      const where = max(offPool, foot)
+      const lit = mix(mix(color(MOON_COLOR), s.accent, 0.3), s.accent, foot.mul(0.6))
+      return vec4(lit.mul(density).mul(fadeNear).mul(fadeEdge).mul(where).mul(s.lightsUp).mul(0.07), 1)
     })()
     const mistGeo = mergeGeometries([
       new THREE.PlaneGeometry(30, 34).rotateX(-Math.PI / 2).translate(0, 0.28, -3),

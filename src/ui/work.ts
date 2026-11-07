@@ -163,10 +163,7 @@ export function renderWork(work: WorkHistory, profile: Profile, base: number, ti
     { class: 'w-head' },
     h('p', { class: 'w-kicker' }, h('span', { class: 'p-prompt', text: '$ ' }), 'cat ~/work'),
     title,
-    h('p', {
-      class: 'w-sub',
-      text: `${profile.role.split('·')[0]!.trim()}${f.remoteSince ? `, on remote teams in the us and europe since ${f.remoteSince}` : ''}. newest first.`,
-    }),
+    h('div', { class: 'w-about' }, ...profile.lines.map((t) => h('p', { class: 'w-sub', text: t }))),
     stats,
   )
 

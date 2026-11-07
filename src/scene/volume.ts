@@ -120,7 +120,9 @@ export function createVolume(s: VolumeShared, camera: THREE.PerspectiveCamera, d
     const dir = toHit.div(max(length(toHit), 0.0001))
     const tint = mix(s.accent, vec3(dot(s.accent, vec3(0.2126, 0.7152, 0.0722))), 0.4)
 
-    const haze = tint.mul(s.formGlow).mul(glowAlong(dir, dist, formC, 0.9)).mul(0.0011)
+    const haze = tint
+      .mul(s.formGlow)
+      .mul(glowAlong(dir, dist, formC, 0.9).mul(0.0011).add(glowAlong(dir, dist, vec3(0, 0.3, 0), 1.6).mul(0.0008)))
     const glow = color('#d6ecff').mul(s.cursor.w).mul(glowAlong(dir, dist, s.cursor.xyz, 7)).mul(0.2)
     let moon: N = float(0)
     for (const sh of SHAFTS) moon = moon.add(shaftAlong(dir, dist, sh.foot, sh.radius * 0.55).mul(sh.strength))

@@ -8,6 +8,7 @@ export const profile: Profile = {
   role: 'frontend engineer · full-stack typescript · 10+ yrs',
   place: 'dhaka, bangladesh · remote, utc+6',
   hello: "hi, i'm rashed.",
+  summary: 'frontend engineer, 10+ years in react and typescript, on remote teams in the us and europe.',
   lines: [
     "i'm a frontend engineer, 10+ years in, mostly react and typescript on remote teams in the us and europe.",
     'four of those years went to healthcare data platforms at iqvia, working on large react apps against rest apis. i go a layer down into node, prisma and mongodb when a feature needs it.',

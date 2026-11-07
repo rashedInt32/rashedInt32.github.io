@@ -11,7 +11,8 @@
 import * as THREE from 'three/webgpu'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
-import { Fn, attribute, cameraPosition, exp2, length, max, mix, normalWorld, normalize, positionWorld, texture, uv, vec2, vec3 } from './tsl'
+import { Fn, attribute, cameraPosition, exp2, length, max, mix, normalWorld, normalize, positionWorld, screenCoordinate, texture, uv, vec2, vec3 } from './tsl'
+import { dissolveCut } from './cloud'
 import { concreteMaterial, type BasinShared } from './basin'
 import { FORM_REF, formTint } from './lighting'
 
@@ -89,11 +90,18 @@ export interface HallAssets {
   plants: Plant[]
 }
 
-export async function loadHall(): Promise<HallAssets> {
+export async function loadHall(onProgress?: (done: number, total: number) => void): Promise<HallAssets> {
   const base = `${import.meta.env.BASE_URL}hall/`
   const images = new THREE.TextureLoader()
+  const total = 10
+  let done = 0
+  const tick = <T,>(x: T): T => {
+    done++
+    onProgress?.(done, total)
+    return x
+  }
   const map = async (name: string) => {
-    const t = await images.loadAsync(`${base}${name}.webp`)
+    const t = tick(await images.loadAsync(`${base}${name}.webp`))
     // glTF's convention, and the way the floor maps were written.
     t.flipY = false
     t.colorSpace = THREE.NoColorSpace
@@ -102,7 +110,7 @@ export async function loadHall(): Promise<HallAssets> {
   }
   const gltf = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)
   const [model, plants, archStatic, archForm, floorStatic, floorForm, propsStatic, propsForm, plantsStatic, plantsForm] = await Promise.all([
-    gltf.loadAsync(`${base}hall.glb`).then((g) => g.scene),
+    gltf.loadAsync(`${base}hall.glb`).then((g) => tick(g.scene)),
     fetch(`${base}plants.json`)
       .then((r) => {
         if (!r.ok) throw new Error(`plants.json: ${r.status}`)
@@ -110,7 +118,7 @@ export async function loadHall(): Promise<HallAssets> {
       })
       .then((d) => {
         if (!Array.isArray(d.plants)) throw new Error('plants.json: no plants list')
-        return { plants: d.plants as Plant[] }
+        return tick({ plants: d.plants as Plant[] })
       }),
     map('arch_static'),
     map('arch_form'),
@@ -191,7 +199,10 @@ function createPlants(assets: HallAssets, s: BasinShared, opts: HallOptions) {
   const at = vec2(mix(rc.x, rc.z, cr.x), mix(rc.w, rc.y, cr.y))
   const still = texture(assets.maps.plantsStatic, at)
   const live = opts.live(positionWorld, vec3(toCam.x, 0, toCam.y)).mul(0.08)
-  mat.colorNode = bakedLight(s, still.rgb, texture(assets.maps.plantsForm, at).rgb).add(live)
+  mat.colorNode = Fn(() => {
+    dissolveCut(s, positionWorld, screenCoordinate)
+    return bakedLight(s, still.rgb, texture(assets.maps.plantsForm, at).rgb).add(live)
+  })()
   mat.opacityNode = still.a
 
   const mesh = new THREE.Mesh(geo, mat)
@@ -211,14 +222,18 @@ export function createHall(assets: HallAssets, s: BasinShared, opts: HallOptions
 
   const props = new THREE.MeshBasicNodeMaterial()
   props.colorNode = Fn(() => {
+    dissolveCut(s, positionWorld, screenCoordinate)
     const live = opts.live(positionWorld, normalize(normalWorld)).mul(PROP_ALBEDO)
     return bakedLight(s, texture(maps.propsStatic, uv()).rgb, texture(maps.propsForm, uv()).rgb).add(live)
   })()
 
   const emit = new THREE.MeshBasicNodeMaterial()
-  emit.colorNode = attribute('color', 'vec3')
-    .mul(EMIT_SCALE * EMIT_GAIN)
-    .mul(s.lightsUp.mul(0.97).add(0.03))
+  emit.colorNode = Fn(() => {
+    dissolveCut(s, positionWorld, screenCoordinate)
+    return attribute('color', 'vec3')
+      .mul(EMIT_SCALE * EMIT_GAIN)
+      .mul(s.lightsUp.mul(0.97).add(0.03))
+  })()
 
   const materials: Record<string, THREE.Material> = { arch, props, emit }
   assets.model.traverse((o) => {

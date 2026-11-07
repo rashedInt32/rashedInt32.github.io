@@ -41,7 +41,14 @@ export const LAMPS: THREE.Vector3[] = PILLAR_Z.flatMap((z) => [
 /** How bright each lamp in LAMPS burns, 0..1. A few run low, one is out. */
 export const LAMP_LEVELS = [1, 0.9, 0.47, 1, 0.95, 0.03, 0.84, 1, 0.63, 0.95]
 
-export const FORM_CENTER = new THREE.Vector3(0, 2.6, 0)
+/**
+ * Every form is authored at its own size, then scaled about the pool's centre
+ * on the floor so the hero reads as an exhibit in the room, not a billboard:
+ * about a third of the frame wide, with hall on every side. Scaling about the
+ * floor keeps the forms that touch the water (sluice, eddy, hive) touching it.
+ */
+export const FORM_SCALE = 0.7
+export const FORM_CENTER = new THREE.Vector3(0, 2.6 * FORM_SCALE, 0)
 
 /** Pillar lamps: warm, about 3500 K. */
 export const LAMP_COLOR = new THREE.Color('#ffc890')

@@ -19,6 +19,20 @@ export interface Project {
   stars: number
   /** CSS hex. Matches the form's main color in the scene. */
   accent: string
+  /** The case page (#/projects/<id>/case). Every field is optional; the page shows what is there. */
+  case?: ProjectCase
+}
+
+export interface ProjectCase {
+  /** One or two sentences, where `line` is one. */
+  summary?: string
+  /** e.g. 'design · code' */
+  role?: string
+  stack?: string[]
+  /** What it does, one line each. */
+  points?: string[]
+  /** Screenshots, served from /public. Shown numbered, in order. */
+  shots?: Array<{ src: string; alt: string; caption?: string }>
 }
 
 /** Who the site is about. The home view shows this. */
@@ -30,7 +44,9 @@ export interface Profile {
   place: string
   /** The first thing the home view says, e.g. "hi, i'm rashed." */
   hello: string
-  /** A few short paragraphs, first person, lowercase like the rest of the UI. */
+  /** One short line for the home panel, two lines wrapped at most. */
+  summary: string
+  /** A few short paragraphs, first person, lowercase like the rest of the UI. Shown on the work page. */
   lines: string[]
   contact: Contact
 }
@@ -129,6 +145,11 @@ export interface Scene {
   setWorkScroll(t: number): void
   /** Pointer over the page, or null when it leaves. */
   setPointer(p: Point | null): void
+  /**
+   * Hold the last frame and stop the loop, for pages that sit over a still
+   * of the hall. Input doesn't wake it until it is released.
+   */
+  setFrozen(on: boolean): void
   /** CSS px from the top of the viewport where the water horizon sits before reveal. */
   horizonY(): number
   stats(): SceneStats
@@ -142,6 +163,10 @@ export interface Ui {
   setFailed(reason: string): void
   /** Select a project (or HOME) without the user asking, e.g. from the URL hash. */
   setActive(index: number): void
+  /** Loading progress before ready, 0..1. Shown next to the prompt. */
+  setProgress(t: number): void
+  /** Where the current form is on screen (NDC), or null when no form shows. The callout line follows it. */
+  setAnchor(p: Point | null): void
   /** Switch view without the user asking. */
   setView(view: View): void
   setStats(s: SceneStats): void
@@ -161,6 +186,8 @@ export interface UiOptions {
   /** Work view scroll progress, 0 at the top to 1 at the bottom. Send it on scroll, throttled to frames. */
   onWorkScroll(t: number): void
   onPointer(p: Point | null): void
+  /** A page that sits over a still of the hall opened or closed. */
+  onFrozen(on: boolean): void
   /** Where to put the prompt line so it lands on the water. */
   horizonY(): number
 }

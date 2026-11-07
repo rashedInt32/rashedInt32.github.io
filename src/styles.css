@@ -20,6 +20,9 @@
   --panel-w: round(down, min(30vw, 440px), 4px);
   --ease-out: cubic-bezier(0.2, 0.7, 0.1, 1);
   --mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  /* Titles only: a light grotesk against the mono labels, so the big
+     words read as type and the small ones as instrument readouts. */
+  --display: 'Manrope Variable', 'Inter', system-ui, sans-serif;
   color-scheme: dark;
   transition: --accent 700ms ease;
 }
@@ -48,6 +51,12 @@ body {
 #scene {
   position: fixed;
   inset: 0;
+  transition: filter 600ms ease;
+}
+
+/* Under a case page the loop is stopped; the compositor blurs the still. */
+#scene.frozen {
+  filter: blur(14px) brightness(0.6);
 }
 
 #ui {
@@ -112,6 +121,12 @@ button {
   background-color: var(--bg);
   pointer-events: auto;
   transition: background-color 1300ms ease;
+}
+
+/* Once the hall is rendering, let it show through, dim, behind the prompt:
+   the water line the prompt will land on is already there. */
+.intro--ready {
+  background-color: rgba(1, 8, 13, 0.45);
 }
 
 .intro--clear {
@@ -386,24 +401,28 @@ button {
   line-height: 16px;
 }
 
-.gh {
+.touch {
   justify-self: end;
-  font-size: 12px;
-  line-height: 20px;
-  color: var(--subtle);
-  padding-bottom: 2px;
-  border-bottom: 1px solid transparent;
+  font-size: 11px;
+  line-height: 18px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+  padding: 6px 12px;
+  border: 1px solid var(--line);
   transition:
     color 200ms ease,
-    border-color 200ms ease;
+    border-color 200ms ease,
+    background-color 200ms ease;
 }
 
-.gh:hover {
+.touch:hover {
   color: var(--ink);
-  border-color: var(--accent);
+  border-color: color-mix(in oklab, var(--accent) 60%, var(--line));
+  background-color: rgba(1, 8, 13, 0.4);
 }
 
-.gh-arrow {
+.touch-arrow {
   color: var(--accent);
 }
 
@@ -435,6 +454,94 @@ button {
   z-index: -1;
   background: radial-gradient(ellipse 100% 55% at 0% 50%, rgba(1, 8, 13, 0.84), rgba(1, 8, 13, 0.5) 50%, rgba(1, 8, 13, 0));
   pointer-events: none;
+}
+
+.ix-label {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 14px;
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ghost);
+}
+
+/* Edge arrows: beside the form, at its height, on wide screens only. */
+.edge {
+  display: none;
+  position: absolute;
+  top: 50%;
+  width: 36px;
+  height: 36px;
+  margin-top: -18px;
+  font-family: var(--display);
+  font-size: 26px;
+  line-height: 36px;
+  text-align: center;
+  color: var(--ghost);
+  transition: color 200ms ease;
+}
+
+.edge:hover {
+  color: var(--ink);
+}
+
+.edge-prev {
+  left: calc(var(--pad) + 300px);
+}
+
+.edge-next {
+  right: calc(var(--pad) + var(--panel-w) + 24px);
+}
+
+@media (min-width: 1100px) {
+  .edge {
+    display: block;
+  }
+}
+
+/* The callout: a hairline from the project's title to the form's shoulder,
+   drawn on each time the project changes. */
+.callout {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  transition: opacity 300ms ease;
+}
+
+.callout.off {
+  opacity: 0;
+}
+
+.callout-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-opacity: 0.55;
+  stroke-width: 1;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
+.callout.draw .callout-line {
+  animation: callout-draw 700ms var(--ease-out) 120ms both;
+}
+
+.callout-dot {
+  fill: var(--ink);
+}
+
+@keyframes callout-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 .index ol {
@@ -528,6 +635,7 @@ button {
 }
 
 .p-tag {
+  text-transform: uppercase;
   display: flex;
   align-items: baseline;
   gap: 0;
@@ -562,10 +670,12 @@ button {
   margin-top: 8px;
   /* As big as the design wants, but never wider than the panel: a mono
      advance is 0.6em, less the -0.04em tracking, plus a little slack. */
-  font-size: round(down, min(clamp(40px, 4.6vw, 76px), calc(var(--panel-w) / (var(--chars) * 0.58))), 1px);
-  font-weight: 200;
+  font-family: var(--display);
+  /* A light grotesk averages about 0.52em per character. */
+  font-size: round(down, min(clamp(40px, 4.6vw, 76px), calc(var(--panel-w) / (var(--chars) * 0.52))), 1px);
+  font-weight: 250;
   line-height: 1;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.03em;
   color: var(--ink);
   white-space: nowrap;
   text-shadow: 0 0 48px rgba(1, 8, 13, 0.6);
@@ -592,6 +702,7 @@ button {
 }
 
 .p-form {
+  text-transform: uppercase;
   margin-top: 12px;
   font-size: 11px;
   line-height: 16px;
@@ -649,6 +760,7 @@ button {
 }
 
 .p-meta {
+  text-transform: uppercase;
   margin-top: 12px;
   display: grid;
   gap: 0;
@@ -724,6 +836,12 @@ button {
 .c-sep {
   color: var(--ghost);
   white-space: pre;
+}
+
+.p-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
 }
 
 .p-link {
@@ -882,11 +1000,216 @@ button {
   flex: 1;
 }
 
+.st-pos,
+.st-clock {
+  border-right: 0;
+  border-left: 1px solid var(--line);
+  color: var(--ghost);
+  font-variant-numeric: tabular-nums;
+}
+
 .st-gpu {
   border-right: 0;
   border-left: 1px solid var(--line);
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+}
+
+/* ── a project's page ──────────────────────────────────── */
+
+.case {
+  position: absolute;
+  inset: calc(var(--pad) + 44px) 0 calc(var(--status-h) + 1px) 0;
+  mask-image: linear-gradient(to bottom, transparent, #000 40px, #000 calc(100% - 32px), transparent);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: auto;
+  outline: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+.case-col {
+  width: min(1180px, calc(100% - var(--pad) * 2));
+  margin: 0 auto;
+  padding: 48px 0 128px;
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 48px 64px;
+  align-items: start;
+}
+
+.case-text {
+  position: sticky;
+  top: 0;
+  display: grid;
+  gap: 20px;
+}
+
+.case-back {
+  justify-self: start;
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--subtle);
+  transition: color 200ms ease;
+}
+
+.case-back:hover {
+  color: var(--ink);
+}
+
+.case-tag {
+  margin-top: 28px;
+}
+
+.case-title {
+  font-family: var(--display);
+  font-size: round(down, clamp(44px, 5.2vw, 76px), 1px);
+  font-weight: 250;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.case-summary {
+  max-width: 48ch;
+  font-size: 15px;
+  line-height: 24px;
+  color: var(--text);
+  text-wrap: pretty;
+}
+
+.case-form {
+  font-size: 11px;
+  line-height: 16px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.case-facts {
+  margin: 8px 0 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 24px;
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.case-facts dt {
+  color: var(--muted);
+}
+
+.case-facts dd {
+  margin: 0;
+  color: var(--ink);
+}
+
+.case-points {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--text);
+}
+
+.case-points li::before {
+  content: '– ';
+  color: var(--accent);
+}
+
+.case-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.case-live,
+.case-chip {
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+
+.case-live {
+  color: var(--bg);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.case-next {
+  margin-top: 40px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  color: var(--subtle);
+  transition: color 200ms ease;
+}
+
+.case-next:hover {
+  color: var(--ink);
+}
+
+.case-next-k {
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.case-next-name {
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+}
+
+.case-shots {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 40px;
+}
+
+.case-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  background: rgba(1, 8, 13, 0.6);
+}
+
+.case-shot-cap {
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--subtle);
+}
+
+.case-shot-n {
+  color: var(--muted);
 }
 
 /* ── work ──────────────────────────────────────────────── */
@@ -939,6 +1262,7 @@ button {
 }
 
 .w-kicker {
+  text-transform: uppercase;
   font-size: 11px;
   line-height: 16px;
   letter-spacing: 0.08em;
@@ -947,10 +1271,11 @@ button {
 
 .w-title {
   margin-top: 16px;
+  font-family: var(--display);
   font-size: round(down, clamp(44px, 6vw, 84px), 1px);
-  font-weight: 200;
+  font-weight: 250;
   line-height: 0.98;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.035em;
   color: var(--ink);
 }
 
@@ -962,8 +1287,13 @@ button {
   color: var(--subtle);
 }
 
-.w-sub {
+.w-about {
   margin-top: 24px;
+  display: grid;
+  gap: 12px;
+}
+
+.w-sub {
   max-width: 56ch;
   font-size: 13px;
   line-height: 20px;
@@ -1154,6 +1484,7 @@ button {
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 16px;
+  font-family: var(--display);
   font-size: round(down, clamp(26px, 2.8vw, 36px), 1px);
   line-height: 36px;
   font-weight: 300;
@@ -1162,6 +1493,7 @@ button {
 }
 
 .job-now {
+  text-transform: uppercase;
   font-size: 10px;
   line-height: 16px;
   letter-spacing: 0.08em;
@@ -1235,6 +1567,7 @@ button {
 }
 
 .job-part {
+  text-transform: uppercase;
   margin-top: 28px;
   font-size: 11px;
   line-height: 16px;
@@ -1324,6 +1657,7 @@ button {
 }
 
 .w-label {
+  text-transform: uppercase;
   justify-self: end;
   padding-top: 20px;
   font-size: 11px;
@@ -1340,6 +1674,7 @@ button {
 }
 
 .w-edu {
+  font-family: var(--display);
   font-size: 20px;
   line-height: 28px;
   font-weight: 300;
@@ -1374,6 +1709,7 @@ button {
 }
 
 .w-row-name {
+  font-family: var(--display);
   font-size: 16px;
   line-height: 24px;
   font-weight: 300;
@@ -1462,6 +1798,7 @@ button {
 .w-mail {
   display: inline-block;
   margin-top: 12px;
+  font-family: var(--display);
   font-size: round(down, clamp(22px, 2.8vw, 36px), 1px);
   line-height: 1.2;
   font-weight: 300;
@@ -1515,6 +1852,7 @@ button {
 }
 
 .fb-hi {
+  font-family: var(--display);
   color: var(--ink);
   font-size: 28px;
   font-weight: 200;
@@ -1552,6 +1890,7 @@ button {
 }
 
 .fb-name {
+  font-family: var(--display);
   color: var(--ink);
   font-size: 18px;
   font-weight: 300;
@@ -1611,8 +1950,21 @@ button {
   }
 
   .ident-role,
-  .gh {
+  .touch,
+  .st-pos,
+  .st-clock,
+  .callout,
+  .ix-label {
     display: none;
+  }
+
+  .case-col {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .case-text {
+    position: static;
   }
 
   .hud[data-view='home'] .panel {

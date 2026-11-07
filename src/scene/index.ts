@@ -4,7 +4,7 @@ import { bloom } from 'three/addons/tsl/display/BloomNode.js'
 import { HOME, HOME_ACCENT, type Point, type Project, type Scene, type SceneStats, type View } from '../contract'
 import { createBasin } from './basin'
 import { NAME, SPLASHES, SUBMERGED, formIndex, glassHits, lazydiffHits } from './forms'
-import { FOG_COLOR, OPENING, WALL } from './layout'
+import { FOG_COLOR, FORM_CENTER, FORM_SCALE, OPENING, WALL } from './layout'
 import { createParticles, rayFrom } from './particles'
 import { Governor, pickTier, probeGpu, qualityFor, type Rung } from './quality'
 import { bake, detailMaps, floorMaps, shadowMaps, wallMaps } from './bake'
@@ -14,6 +14,7 @@ import { createStencils } from './details'
 import { createVolume } from './volume'
 import { createLighting } from './lighting'
 import { createHall, loadHall } from './hall'
+import { createCloud } from './cloud'
 import { createPacer } from './pacer'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -23,9 +24,18 @@ interface Options {
   host: HTMLElement
   projects: Project[]
   params: URLSearchParams
+  /** Loading progress before ready, 0..1. */
+  onProgress?: (t: number) => void
+  /** After each frame: where the form's shoulder is on screen (NDC), or null when no form shows. */
+  onAnchor?: (p: Point | null) => void
 }
 
+/** The point the overlay's callout line meets the form: its right shoulder, in world units. */
+const ANCHOR = new THREE.Vector3(0.95, FORM_CENTER.y + 0.35, 0)
+
 const MORPH_SECONDS = 2.6
+/** How hard the form's light burns in home and projects. */
+const FORM_GLOW = 2.9
 const REVEAL_MS = 3000
 // No input and nothing changing shape for this long: drop to 30 fps.
 /**
@@ -99,7 +109,7 @@ const ease = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x))
 const damp = (from: number, to: number, rate: number, dt: number) => to + (from - to) * Math.exp(-rate * dt)
 
-export function createScene({ host, projects, params }: Options): Scene {
+export function createScene({ host, projects, params, onProgress, onAnchor }: Options): Scene {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
   const stats: SceneStats = { fps: 0, tier: 0, backend: 'none', particles: 0 }
 
@@ -126,6 +136,10 @@ export function createScene({ host, projects, params }: Options): Scene {
 
   let started: ((index: number) => void) | null = null
   let wake: () => void = () => {}
+  let frozen = false
+  let freeze: (on: boolean) => void = (on) => {
+    frozen = on
+  }
 
   const ready = (async () => {
     // ?off=volume,bloom,msaa,mirror,haze,grains,baked,plants turns parts off, to measure each one's cost.
@@ -137,7 +151,8 @@ export function createScene({ host, projects, params }: Options): Scene {
     const hallAssets = off.has('baked')
       ? Promise.resolve(null)
       : Promise.race([
-          loadHall(),
+          // The hall is nine tenths of the wait; the compile after it is the rest.
+          loadHall((done, total) => onProgress?.((0.9 * done) / total)),
           new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`no answer in ${HALL_TIMEOUT_MS / 1000} s`)), HALL_TIMEOUT_MS)),
         ]).catch((err) => {
           console.warn('harbor: baked hall unavailable, building it from code instead', err)
@@ -178,7 +193,9 @@ export function createScene({ host, projects, params }: Options): Scene {
     const inMirror = uniform(0)
     // The pointer's light: xyz where it touches the room, w its strength.
     const cursor = uniform(new THREE.Vector4(0, -50, 0, 0))
-    const shared = { time, lightsUp, accent, formGlow, inMirror, cursor }
+    // The work page: the hall goes to points (cloud.ts).
+    const dissolve = uniform(0)
+    const shared = { time, lightsUp, accent, formGlow, inMirror, cursor, dissolve }
 
     const fogColor = uniform(FOG_COLOR.clone())
 
@@ -217,6 +234,10 @@ export function createScene({ host, projects, params }: Options): Scene {
     const basin = createBasin(shared, { shafts: q.shafts, motes: q.motes, mist: tier >= 2 && !off.has('haze'), wallMap, detailMap, light, baked: !!hall })
     scene.add(basin)
     if (hallModel) scene.add(hallModel)
+    // The hall as points, for the work page. Half the grain budget: it only
+    // draws while the hall is dissolving or gone.
+    const cloud = hallModel && !off.has('cloud') ? createCloud(hallModel, Math.floor(q.particles / 2), shared) : null
+    if (cloud) scene.add(cloud)
     scene.add(createHarbor(shared, detailMap))
     if (tier >= 1) scene.add(createStencils(detailMap, hall ? undefined : light, inMirror))
 
@@ -337,8 +358,10 @@ export function createScene({ host, projects, params }: Options): Scene {
     pu.formB.value = SUBMERGED
     pu.morph.value = 1
     renderer.compute(particles.init)
+    onProgress?.(0.95)
     await renderer.compileAsync(scene, camera)
     pipeline.render()
+    onProgress?.(1)
 
     // --------------------------------------------------------- motion
     let morphT = 1
@@ -367,6 +390,28 @@ export function createScene({ host, projects, params }: Options): Scene {
     let glassCarry = 0
     let dripCarry = 0
 
+    // The overlay draws a line from the project's title to the form. It only
+    // needs the point when it moves, so a still camera costs no DOM writes.
+    const anchorV = new THREE.Vector3()
+    let anchorX = NaN
+    let anchorY = NaN
+    let anchorOn = false
+    const reportAnchor = () => {
+      if (!onAnchor) return
+      const show = current >= 0 && revealAt >= 0
+      if (!show) {
+        if (anchorOn) onAnchor(null)
+        anchorOn = false
+        return
+      }
+      anchorV.copy(ANCHOR).project(camera)
+      if (anchorOn && Math.abs(anchorV.x - anchorX) < 1e-4 && Math.abs(anchorV.y - anchorY) < 1e-4) return
+      anchorOn = true
+      anchorX = anchorV.x
+      anchorY = anchorV.y
+      onAnchor({ x: anchorX, y: anchorY })
+    }
+
     const startMorph = (index: number) => {
       pu.formA.value = pu.formB.value
       pu.formB.value = index === HOME ? NAME : index === WORK ? SUBMERGED : formIndex(projects[index]!.id)
@@ -393,6 +438,7 @@ export function createScene({ host, projects, params }: Options): Scene {
         sinceInput: now - lastInput,
         settled:
           morphT >= 1 &&
+          (!cloud || dissolve.value === 0 || dissolve.value > 0.985) &&
           (revealAt < 0 || now - revealAt > REVEAL_MS) &&
           (establishAt < 0 || now - establishAt > ESTABLISH.ms * ESTABLISH.movingUntil),
         reading: current === WORK,
@@ -427,7 +473,15 @@ export function createScene({ host, projects, params }: Options): Scene {
       const rise = ease(revealK)
       lightsUp.value = revealAt < 0 ? 0 : ease(clamp01((now - revealAt - 300) / (REVEAL_MS - 300)))
       pu.lightsUp.value = lightsUp.value
-      formGlow.value = damp(formGlow.value, revealAt < 0 ? 0 : current === WORK ? 0.4 : 2.2, 1.6, dt)
+      // 2.2 matches the bake (FORM_REF); a notch above it, the form lights the pool and the plants.
+      formGlow.value = damp(formGlow.value, revealAt < 0 ? 0 : current === WORK ? 0.4 : FORM_GLOW, 1.6, dt)
+      if (cloud) {
+        dissolve.value = damp(dissolve.value, current === WORK && revealAt >= 0 ? 1 : 0, 1.1, dt)
+        if (dissolve.value < 0.003) dissolve.value = 0
+        cloud.visible = dissolve.value > 0
+        // Fully gone: don't rasterise the hall just to discard it.
+        if (hallModel) hallModel.visible = dissolve.value < 0.985
+      }
 
       // Morph between forms, then start the queued one.
       if (morphT < 1) {
@@ -526,8 +580,8 @@ export function createScene({ host, projects, params }: Options): Scene {
         const k = -rayO.y / rayD.y
         const hx = rayO.x + rayD.x * k
         const hz = rayO.z + rayD.z * k
-        if (Math.abs(hx) < 14 && hz > -18 && hz < 9 && Math.hypot(hx - lastWake.x, hz - lastWake.z) > 0.45) {
-          water.drop(hx, hz, 0.45, simTime)
+        if (Math.abs(hx) < 14 && hz > -18 && hz < 9 && Math.hypot(hx - lastWake.x, hz - lastWake.z) > 0.35) {
+          water.drop(hx, hz, 0.7, simTime)
           lastWake.set(hx, 0, hz)
         }
       }
@@ -552,11 +606,11 @@ export function createScene({ host, projects, params }: Options): Scene {
           glassCarry -= 1
           const hits = glassHits(simTime)
           const [hx, hz] = hits[Math.floor(Math.random() * hits.length)]!
-          water.drop(hx + (Math.random() - 0.5) * 0.1, hz + (Math.random() - 0.5) * 0.1, 0.4, simTime)
+          water.drop(hx * FORM_SCALE + (Math.random() - 0.5) * 0.1, hz * FORM_SCALE + (Math.random() - 0.5) * 0.1, 0.4, simTime)
         }
       }
       if (morphT >= 1 && revealAt >= 0 && pu.formB.value === formIndex('lazydiff')) {
-        for (const [hx, hz] of lazydiffHits(simTime - dt * timeScale, simTime)) water.drop(hx, hz, 0.45, simTime)
+        for (const [hx, hz] of lazydiffHits(simTime - dt * timeScale, simTime)) water.drop(hx * FORM_SCALE, hz * FORM_SCALE, 0.45, simTime)
       }
       if (morphT >= 1 && revealAt >= 0) {
         const list = SPLASHES[pu.formB.value as number] ?? []
@@ -564,13 +618,14 @@ export function createScene({ host, projects, params }: Options): Scene {
           splashCarry[i] = (splashCarry[i] ?? 0) + s.rate * dt * timeScale
           while (splashCarry[i]! >= 1) {
             splashCarry[i]! -= 1
-            water.drop(s.x[0] + Math.random() * (s.x[1] - s.x[0]), s.z[0] + Math.random() * (s.z[1] - s.z[0]), s.amp, simTime)
+            water.drop((s.x[0] + Math.random() * (s.x[1] - s.x[0])) * FORM_SCALE, (s.z[0] + Math.random() * (s.z[1] - s.z[0])) * FORM_SCALE, s.amp, simTime)
           }
         })
       }
 
       renderer.compute(particles.update)
       pipeline.render()
+      reportAnchor()
       if (perf) {
         const ms = performance.now() - workStart
         perf.cpuMs += (ms - perf.cpuMs) * 0.05
@@ -599,9 +654,20 @@ export function createScene({ host, projects, params }: Options): Scene {
     // Only run while the tab is visible and someone is around.
     let sleeping = false
     wake = () => {
-      if (!sleeping || document.hidden) return
+      if (!sleeping || document.hidden || frozen) return
       sleeping = false
       loop(true)
+    }
+    freeze = (on: boolean) => {
+      if (on === frozen) return
+      frozen = on
+      if (on) {
+        sleeping = true
+        stopLoop()
+      } else {
+        lastInput = performance.now()
+        wake()
+      }
     }
     const loop = (on: boolean) => {
       if (on) {
@@ -611,6 +677,7 @@ export function createScene({ host, projects, params }: Options): Scene {
       } else stopLoop()
     }
     document.addEventListener('visibilitychange', () => {
+      if (frozen) return
       if (!document.hidden) {
         lastInput = performance.now()
         sleeping = false
@@ -688,6 +755,9 @@ export function createScene({ host, projects, params }: Options): Scene {
       pointer.on = true
       pointer.movedAt = now
       pointer.ndc.set(p.x, p.y)
+    },
+    setFrozen(on: boolean) {
+      freeze(on)
     },
     horizonY() {
       const v = new THREE.Vector3(0, 0, -80).project(camera)

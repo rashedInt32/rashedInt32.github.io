@@ -1,6 +1,7 @@
 import '@fontsource-variable/jetbrains-mono'
+import '@fontsource-variable/manrope'
 import './styles.css'
-import type { Scene } from './contract'
+import type { Scene, Ui } from './contract'
 import { profile, work } from './about'
 import { projects } from './projects'
 import { createUI } from './ui'
@@ -17,6 +18,7 @@ function stubScene(): Scene {
     setWorkScroll: () => {},
     setProject: () => {},
     setPointer: () => {},
+    setFrozen: () => {},
     horizonY: () => innerHeight * 0.62,
     stats: () => ({ fps: 60, tier: 3, backend: 'none', particles: 0 }),
   }
@@ -25,7 +27,13 @@ function stubScene(): Scene {
 async function loadScene(): Promise<Scene> {
   if (params.has('noscene')) return stubScene()
   const { createScene } = await import('./scene')
-  return createScene({ host: document.getElementById('scene')!, projects, params })
+  return createScene({
+    host: document.getElementById('scene')!,
+    projects,
+    params,
+    onProgress: (t) => ui.setProgress(t),
+    onAnchor: (p) => ui.setAnchor(p),
+  })
 }
 
 const scenePromise = loadScene()
@@ -33,7 +41,7 @@ let scene: Scene | null = null
 const queue: Array<(s: Scene) => void> = []
 const withScene = (fn: (s: Scene) => void) => (scene ? fn(scene) : queue.push(fn))
 
-const ui = createUI({
+const ui: Ui = createUI({
   root: document.getElementById('ui')!,
   projects,
   profile,
@@ -43,6 +51,11 @@ const ui = createUI({
   onWorkScroll: (t) => scene?.setWorkScroll(t),
   onSelect: (i) => withScene((s) => s.setProject(i)),
   onPointer: (p) => scene?.setPointer(p),
+  onFrozen: (on) => {
+    // The still is blurred by the compositor, once; nothing renders behind it.
+    document.getElementById('scene')!.classList.toggle('frozen', on)
+    withScene((s) => s.setFrozen(on))
+  },
   horizonY: () => scene?.horizonY() ?? innerHeight * 0.62,
 })
 

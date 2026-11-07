@@ -36,6 +36,7 @@ import {
   vec4,
 } from './tsl'
 import { SUBMERGED, evalForm, type FormCtx } from './forms'
+import { FORM_CENTER, FORM_SCALE } from './layout'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type N = any
@@ -233,13 +234,14 @@ export function createParticles(count: number, alphaToCoverage: boolean, statele
   const shade = Fn(() => {
     // Light from the opening in the ceiling. The grain's normal is faked as
     // pointing out from the middle of the form, which reads as volume.
-    const n = normalize(P.sub(vec3(0, 2.6, 0)).add(vec3(0, 0, 0.0001)))
+    const centre = vec3(FORM_CENTER.x, FORM_CENTER.y, FORM_CENTER.z)
+    const n = normalize(P.sub(centre).add(vec3(0, 0, 0.0001)))
     const lambert = dot(n, u.keyDir).mul(0.5).add(0.5)
     const facing = dot(n, normalize(cameraPosition.sub(P))).mul(0.25).add(0.75)
     // Grains on the far side of the form sit in its own shadow: up to 55%
     // darker the deeper they are behind its middle, seen from the camera.
-    const toEye = normalize(cameraPosition.sub(vec3(0, 2.6, 0)))
-    const behind = dot(P.sub(vec3(0, 2.6, 0)), toEye).negate()
+    const toEye = normalize(cameraPosition.sub(centre))
+    const behind = dot(P.sub(centre), toEye).negate()
     const occluded = float(1).sub(smoothstep(-0.3, 1.4, behind).mul(0.55))
     // The halo above lights the tops.
     const fromRing = max(n.y, 0).mul(0.18)
@@ -289,7 +291,8 @@ export type Particles = ReturnType<typeof createParticles>
 // again, and the GPU buffer is re-uploaded.
 const NAME_LINES = ['rashed', 'parvez']
 const NAME_FONT = '"JetBrains Mono Variable", ui-monospace, Menlo, monospace'
-const NAME_WIDTH = 5.5
+// Authored width; FORM_SCALE brings it to about 3.2 m, a third of the frame.
+const NAME_WIDTH = 3.2 / FORM_SCALE
 
 function fillName(attr: THREE.StorageInstancedBufferAttribute, count: number) {
   const write = () => {
