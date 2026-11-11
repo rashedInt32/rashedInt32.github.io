@@ -24,7 +24,7 @@ jobs:
       - run: bun test
       - id: pages
         uses: actions/configure-pages@v5
-      # base_path is "/harbor" on github.io and empty on a custom domain.
+      # base_path is empty at a domain root and "/<repo>" under a project path.
       - run: bun run typecheck && bunx vite build --base "${{ steps.pages.outputs.base_path }}/"
       - uses: actions/upload-pages-artifact@v3
         with:
