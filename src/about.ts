@@ -18,7 +18,7 @@ export const profile: Profile = {
     github: 'https://github.com/rashedInt32',
     linkedin: 'https://www.linkedin.com/in/rashed-parvez',
     email: 'parvez08eee@gmail.com',
-    cv: '/rashed-parvez-cv.pdf',
+    cv: `${import.meta.env.BASE_URL}rashed-parvez-cv.pdf`,
   },
 }
 
