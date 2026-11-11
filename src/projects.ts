@@ -3,7 +3,7 @@ import type { Project } from './contract'
 
 // Order is the order in the water: most starred first, then the ones I'm
 // proudest of. Accents come from glass's PRISM palette and tidepool, the
-// same colors the forms use in the scene. Stars as of 2026-11-06.
+// same colors the forms use in the scene. Stars as of 2026-11-11.
 export const projects: Project[] = [
   {
     id: 'lazydiff',
@@ -39,6 +39,17 @@ export const projects: Project[] = [
     accent: '#e06c75',
   },
   {
+    id: 'jev',
+    name: 'jev-mcp',
+    kind: 'mcp server',
+    year: 2026,
+    line: 'TypeSafe Jev as tools my agent can call: classify, score, check. Each answer comes back typed, with calibrated odds, never prose.',
+    form: 'a balance weighing each answer',
+    url: 'https://github.com/rashedInt32/jev-mcp',
+    stars: 7,
+    accent: '#4eb4d3',
+  },
+  {
     id: 'hive',
     name: 'effect-hive',
     kind: 'fullstack app',
@@ -70,17 +81,6 @@ export const projects: Project[] = [
     url: 'https://github.com/rashedInt32/sluice',
     stars: 0,
     accent: '#4d96ff',
-  },
-  {
-    id: 'eddy',
-    name: 'eddy',
-    kind: 'terminal toy',
-    year: 2026,
-    line: 'A flow field for my terminal. Particles drift through curl noise, packed into braille.',
-    form: 'a curl-noise vortex turning the water',
-    url: 'https://github.com/rashedInt32/eddy',
-    stars: 0,
-    accent: '#4eb4d3',
   },
   {
     id: 'watchglass',

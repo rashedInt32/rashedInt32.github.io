@@ -1,7 +1,7 @@
 // The seam between the 3D scene (src/scene) and the DOM overlay (src/ui).
 // main.ts wires one to the other. Neither side imports the other.
 
-export type FormId = 'lazydiff' | 'glass' | 'zen' | 'hive' | 'auth' | 'sluice' | 'eddy' | 'watchglass' | 'quilt' | 'loom'
+export type FormId = 'lazydiff' | 'glass' | 'zen' | 'jev' | 'hive' | 'auth' | 'sluice' | 'watchglass' | 'quilt' | 'loom'
 
 export interface Project {
   id: FormId
@@ -12,7 +12,7 @@ export interface Project {
   year: number
   /** One-line pitch, first person. */
   line: string
-  /** What the shape in the water is, e.g. 'a curl-noise vortex'. */
+  /** What the shape in the water is, e.g. 'a hive, messages crossing between its cells'. */
   form: string
   url: string
   /** GitHub stars when the list was last refreshed. 0 hides the badge. */

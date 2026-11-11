@@ -19,7 +19,6 @@ import {
   floor,
   fract,
   int,
-  log,
   max,
   min,
   mix,
@@ -42,7 +41,7 @@ import { FORM_SCALE, KEY_DIR as KEY } from './layout'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type N = any
 
-export const FORM_ORDER: FormId[] = ['lazydiff', 'glass', 'zen', 'hive', 'auth', 'sluice', 'eddy', 'watchglass', 'quilt', 'loom']
+export const FORM_ORDER: FormId[] = ['lazydiff', 'glass', 'zen', 'jev', 'hive', 'auth', 'sluice', 'watchglass', 'quilt', 'loom']
 /** The home view: the grains spell the name. */
 export const NAME = FORM_ORDER.length
 /** The resting state before the reveal: everything under the water. */
@@ -117,47 +116,76 @@ function boxSurface(a: N, b: N, d: N, size: N): N {
 
 const jitter = (h: N, amount: number): N => h.sub(0.5).mul(amount)
 
-// ---------------------------------------------------------------- eddy
-// A whirlpool on the water and a spout twisting up out of it, banded by
-// three helices. Both turn rigidly, so the arms never wind into rings.
-function eddy(x: FormCtx, P: N, C: N) {
+// ------------------------------------------------------------------ jev
+// jev-mcp hands an agent typed answers with calibrated odds. A balance: a
+// post, a beam that never quite settles, two pans on chains with unequal
+// heaps, and a needle reading the tilt off a row of ticks.
+const SC = { foot: 0.45, pivot: 4.25, arm: 2.0, drop: 1.75, pan: 0.78, turn: 0.32 }
+
+function jev(x: FormCtx, P: N, C: N) {
   const { h1, h2, h3, h4, h5, t } = x
-  If(h1.lessThan(0.42), () => {
-    const r = float(0.2).add(pow(h2, 0.7).mul(2.6))
-    const haze = h1.lessThan(0.1)
-    const arm = floor(h3.mul(4))
-    const width = select(haze, float(TAU), r.mul(0.1).add(0.2))
-    const a = arm
-      .mul(TAU / 4)
-      .add(log(r.add(0.2)).mul(2.6))
-      .add(jitter(h4, 1).mul(width))
-      .sub(t.mul(0.5))
-    const y = float(0.03).add(h5.mul(0.05)).add(pow(r.div(2.8), 2).mul(0.12))
-    P.assign(vec3(cos(a).mul(r), y, sin(a).mul(r)))
-    const k = r.div(2.8)
-    C.assign(vec4(mix(c('#dff6ff'), c('#4d96ff'), smoothstep(0.1, 1, k)), float(1).sub(k).mul(select(haze, float(0.15), float(0.55)))))
+  const tilt = sin(t.mul(0.55)).mul(0.14).add(sin(t.mul(1.37)).mul(0.04)).add(0.07)
+  const pivot = vec3(0, SC.pivot, 0)
+  const left = h2.lessThan(0.5)
+  const side = select(left, float(-1), float(1))
+  const u2 = fract(h2.mul(2))
+  const end = pivot.add(vec3(cos(tilt), sin(tilt), 0).mul(side.mul(SC.arm)))
+  const hang = end.sub(vec3(0, SC.drop, 0))
+  If(h1.lessThan(0.08), () => {
+    P.assign(vec3(jitter(h4, 0.05), mix(SC.foot, SC.pivot, h3), jitter(h5, 0.05)))
+    C.assign(vec4(c('#9bb5c7'), 0.3))
   })
-    .ElseIf(h1.lessThan(0.93), () => {
-      const s = h2
-      const y = s.mul(4.6)
-      const r = float(0.1).add(pow(s, 2.2).mul(1.75)).add(jitter(h5, 1).mul(s.mul(0.25).add(0.05)))
-      const band = floor(h3.mul(3))
-      const a = band
-        .mul(TAU / 3)
-        .add(s.mul(7))
-        .add(jitter(h4, 1).mul(0.95))
-        .sub(t.mul(1.5))
-      P.assign(vec3(cos(a).mul(r), y, sin(a).mul(r)))
-      C.assign(vec4(mix(c('#eefaff'), c('#4eb4d3'), smoothstep(0, 0.7, s)), float(0.75).sub(s.mul(0.45))))
+    .ElseIf(h1.lessThan(0.14), () => {
+      const a = h3.mul(TAU)
+      const r = sqrt(h4).mul(0.8)
+      P.assign(vec3(cos(a).mul(r), float(SC.foot).add(jitter(h5, 0.06)), sin(a).mul(r)))
+      C.assign(vec4(c('#6f94a6'), 0.12))
+    })
+    .ElseIf(h1.lessThan(0.27), () => {
+      const s = h3.mul(2).sub(1).mul(SC.arm)
+      P.assign(pivot.add(vec3(cos(tilt), sin(tilt), 0).mul(s)).add(vec3(0, jitter(h4, 0.05), jitter(h5, 0.05))))
+      C.assign(vec4(c('#dff6ff'), 0.65))
+    })
+    .ElseIf(h1.lessThan(0.31), () => {
+      // The needle hangs square to the beam.
+      P.assign(pivot.add(vec3(sin(tilt), cos(tilt).negate(), 0).mul(h3.mul(0.95))).add(vec3(0, 0, jitter(h4, 0.03))))
+      C.assign(vec4(c('#4eb4d3'), 0.75))
+    })
+    .ElseIf(h1.lessThan(0.38), () => {
+      // Nine ticks under the pivot; the middle one is longer.
+      const k = floor(h3.mul(9))
+      const a = k.sub(4).mul(0.1)
+      const r = float(1.05).add(h4.mul(select(k.equal(4), float(0.24), float(0.12))))
+      P.assign(pivot.add(vec3(sin(a), cos(a).negate(), 0).mul(r)))
+      C.assign(vec4(c('#dff6ff'), 0.35))
+    })
+    .ElseIf(h1.lessThan(0.5), () => {
+      // Three chains a side, from the beam's end to the pan's rim.
+      const a = floor(u2.mul(3)).mul(TAU / 3).add(0.5)
+      const rim = hang.add(vec3(cos(a).mul(SC.pan), 0, sin(a).mul(SC.pan)))
+      P.assign(mix(end, rim, h3).add(vec3(jitter(h4, 0.025), 0, jitter(h5, 0.025))))
+      C.assign(vec4(c('#9bb5c7'), 0.3))
+    })
+    .ElseIf(h1.lessThan(0.8), () => {
+      // The pans: a bright rim and a shallow bowl.
+      const onRim = u2.lessThan(0.3)
+      const r = select(onRim, float(SC.pan), sqrt(h4).mul(SC.pan))
+      const a = h5.mul(TAU)
+      const k = r.div(SC.pan)
+      P.assign(hang.add(vec3(cos(a).mul(r), k.mul(k).sub(1).mul(0.2), sin(a).mul(r))))
+      C.assign(vec4(c('#4eb4d3'), select(onRim, float(0.6), float(0.2))))
     })
     .Else(() => {
-      const ph = fract(h2.add(t.mul(0.35)))
-      const a = h3.mul(TAU).sub(t.mul(1.5))
-      const r = float(1.85).add(ph.mul(1.3))
-      const y = float(4.6).add(sin(ph.mul(PI)).mul(0.5)).sub(ph.mul(ph).mul(1.4))
-      P.assign(vec3(cos(a).mul(r), y, sin(a).mul(r)).add(vec3(jitter(h4, 0.1), 0, jitter(h5, 0.1))))
-      C.assign(vec4(c('#e6f7ff'), float(1).sub(ph).mul(0.5)))
+      // What is being weighed: the likelier answer, and the rest.
+      const R = select(left, float(0.52), float(0.32))
+      const H = select(left, float(0.6), float(0.34))
+      const r = sqrt(h3).mul(R)
+      const a = h5.mul(TAU)
+      const y = float(1).sub(r.div(R)).mul(H).mul(h4).sub(0.17)
+      P.assign(hang.add(vec3(cos(a).mul(r), y, sin(a).mul(r))))
+      C.assign(vec4(select(left, c('#e0af68'), c('#e09cb0')), 0.5))
     })
+  P.assign(rotY(P, float(SC.turn)))
 }
 
 // --------------------------------------------------------------- sluice
@@ -891,7 +919,7 @@ const BY_ID: Record<FormId, Builder> = {
   hive,
   auth,
   sluice,
-  eddy,
+  jev,
   watchglass,
   quilt,
   loom,
@@ -918,7 +946,6 @@ export interface Splash {
 }
 
 export const SPLASHES: Record<number, Splash[]> = {
-  [formIndex('eddy')]: [{ x: [-0.6, 0.6], z: [-0.6, 0.6], rate: 2.5, amp: 0.5 }],
   [formIndex('sluice')]: [{ x: [-1.5, 1.5], z: [0.55, 0.8], rate: 7, amp: 0.55 }],
   [formIndex('hive')]: HIVE_DRIPS.map((dx) => ({ x: [dx - 0.05, dx + 0.05] as [number, number], z: [-0.05, 0.05] as [number, number], rate: 0.9, amp: 0.3 })),
 }

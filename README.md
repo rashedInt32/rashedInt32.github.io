@@ -2,8 +2,8 @@
 
 My portfolio. A concrete hall at night with a flush pool in the middle. The
 tools I've built rise out of it one at a time as shapes made of grains: a
-diff that sinks and rises, a crystal splitting moonlight, an ensō, a hive, a
-lock, a sluice gate, a vortex, an hourglass, a quilt, a loom.
+diff that sinks and rises, a crystal splitting moonlight, an ensō, a
+balance, a hive, a lock, a sluice gate, an hourglass, a quilt, a loom.
 
 You enter by typing `cd ~/harbor` at a prompt. The prompt line becomes the
 water line, the camera rises, and the grains spell my name. `j`/`k`, the
