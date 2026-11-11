@@ -44,7 +44,7 @@ export const projects: Project[] = [
     kind: 'mcp server',
     year: 2026,
     line: 'TypeSafe Jev as tools my agent can call: classify, score, check. Each answer comes back typed, with calibrated odds, never prose.',
-    form: 'a balance weighing each answer',
+    form: 'a whirlpool, every maybe drawn to one answer',
     url: 'https://github.com/rashedInt32/jev-mcp',
     stars: 7,
     accent: '#4eb4d3',

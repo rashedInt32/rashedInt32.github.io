@@ -45,7 +45,7 @@ export const LAMP_LEVELS = [1, 0.9, 0.47, 1, 0.95, 0.03, 0.84, 1, 0.63, 0.95]
  * Every form is authored at its own size, then scaled about the pool's centre
  * on the floor so the hero reads as an exhibit in the room, not a billboard:
  * about a third of the frame wide, with hall on every side. Scaling about the
- * floor keeps the forms that touch the water (sluice, hive) touching it.
+ * floor keeps the forms that touch the water (sluice, jev, hive) touching it.
  */
 export const FORM_SCALE = 0.7
 export const FORM_CENTER = new THREE.Vector3(0, 2.6 * FORM_SCALE, 0)
