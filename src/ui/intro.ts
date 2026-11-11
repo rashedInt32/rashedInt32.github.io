@@ -203,6 +203,9 @@ export function createIntro(o: IntroOptions): Intro {
   addEventListener('keydown', onKey)
   render()
   startSpin()
+  // Nobody has to know to press Enter: after a beat the command types itself,
+  // and submit() holds it until the scene is ready.
+  later(o.reduced ? 0 : 700, submit)
 
   return {
     el,
